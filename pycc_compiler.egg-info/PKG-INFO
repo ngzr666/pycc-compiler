@@ -1,12 +1,8 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.1
 Name: pycc-compiler
-Version: 1.5.1
-Summary: compile python to ELF
+Version: 1.5.2
+Summary: Compile python to ELF (Only Termux)
 Requires-Python: >=3.8
 Requires-Dist: cython>=3.0.0
-Dynamic: description
-Dynamic: requires-dist
-Dynamic: requires-python
-Dynamic: summary
 
-compile python to ELF
+Compile python to ELF (Only Termux)
