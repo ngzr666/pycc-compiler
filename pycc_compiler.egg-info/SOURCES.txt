@@ -1,0 +1,10 @@
+README.md
+setup.py
+pycc/__init__.py
+pycc/pycc.py
+pycc_compiler.egg-info/PKG-INFO
+pycc_compiler.egg-info/SOURCES.txt
+pycc_compiler.egg-info/dependency_links.txt
+pycc_compiler.egg-info/entry_points.txt
+pycc_compiler.egg-info/requires.txt
+pycc_compiler.egg-info/top_level.txt

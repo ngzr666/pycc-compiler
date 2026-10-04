@@ -1,0 +1,2 @@
+[console_scripts]
+pycc = pycc:main
