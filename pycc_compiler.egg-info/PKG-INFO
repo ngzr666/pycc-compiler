@@ -1,8 +1,14 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: pycc-compiler
-Version: 1.5.2
+Version: 1.5.3
 Summary: Compile python to ELF (Only Termux)
 Requires-Python: >=3.8
+License-File: LICENSE
 Requires-Dist: cython>=3.0.0
+Dynamic: description
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
 
 Compile python to ELF (Only Termux)

@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import re
 import tempfile
+import sysconfig
 
 VERSION = "1.5.2"
 DESCRIPTION = "Compile python to ELF (Only Termux)"
@@ -125,6 +126,18 @@ def get_temp_dir():
             continue
     return os.path.join(tempfile.gettempdir(), 'pycc_build')
 
+def get_ext_suffix():
+    """Python C extension suffix, e.g. .cpython-313-aarch64-linux-android.so"""
+    env_suffix = os.environ.get('PYCC_EXT_SUFFIX')
+    if env_suffix:
+        return env_suffix if env_suffix.startswith('.') else '.' + env_suffix
+    cur_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    if get_python_version() == cur_version:
+        suffix = sysconfig.get_config_var('EXT_SUFFIX')
+        if suffix:
+            return suffix
+    return f".cpython-{get_python_version().replace('.', '')}-aarch64-linux-android.so"
+
 def is_valid_module_name(name):
     return re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name) is not None
 
@@ -178,14 +191,20 @@ def compile_to_so(input_file, output, opt_level, other_flags, site_install, clan
     os.makedirs(work_dir, exist_ok=True)
     
     try:
+        ext_suffix = get_ext_suffix()
+        
         if output:
-            so_output = output
+            so_output = output if output.endswith('.so') else f"{output}{ext_suffix}"
         else:
             base_name = os.path.splitext(os.path.basename(input_file))[0]
-            so_output = f"{base_name}.so"
+            so_output = f"{base_name}{ext_suffix}"
         
         if file_ext in ['.py', '.pyx']:
-            module_name = os.path.splitext(os.path.basename(so_output))[0]
+            out_base = os.path.basename(so_output)
+            if out_base.endswith(ext_suffix):
+                module_name = out_base[:-len(ext_suffix)]
+            else:
+                module_name = os.path.splitext(out_base)[0]
             if not is_valid_module_name(module_name):
                 module_name = os.path.splitext(os.path.basename(input_file))[0]
             
@@ -402,7 +421,7 @@ def main():
         print("  -run                Compile and run")
         print("  -c                  Generate C file (.c)")
         print("  -cpp                Generate C++ file (.cpp)")
-        print("  -so                 Generate shared library (.so)")
+        print("  -so                 Generate shared library (<name><EXT_SUFFIX>)")
         print("  --site, -s          Install to site-packages (with -so)")
         print("  -v                  Verbose mode")
         print("  -q                  Quiet mode")
@@ -411,6 +430,8 @@ def main():
         print("  --help, -h          This help")
         print("\nEnvironment:")
         print("  PYCC_PY_VERSION     Python version")
+        print("  PYCC_EXT_SUFFIX     Override C extension suffix")
+
         return
     
     if len(sys.argv) < 2:
