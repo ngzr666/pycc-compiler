@@ -16,7 +16,7 @@ import tempfile
 import tokenize
 import sysconfig
 
-VERSION = "1.6.0"
+VERSION = "1.6.1"
 DESCRIPTION = "Compile python to ELF (Only Termux)"
 
 RED = '\033[91m'
@@ -856,6 +856,129 @@ def generate_cpp(input_file, output, is_cpp, dry_run):
         if should_cleanup and os.path.exists(input_file):
             os.remove(input_file)
 
+COMPLETION_SHELLS = ('bash', 'zsh', 'fish')
+
+
+def _bash_completion():
+    return r'''# bash completion for pycc
+_pycc() {
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-O --option -B --best --python -o --output -run -c -cpp -so --dir --dir-one -one --entry --site -s -v -q -### --completions --completion --version --help -h"
+
+    case "$prev" in
+        --python)
+            COMPREPLY=( $(compgen -W "3.11 3.12 3.13 3.14 3.15" -- "$cur") )
+            return 0
+            ;;
+        --completions|--completion)
+            COMPREPLY=( $(compgen -W "bash zsh fish" -- "$cur") )
+            return 0
+            ;;
+        -o|--output|--entry)
+            COMPREPLY=( $(compgen -f -- "$cur") )
+            return 0
+            ;;
+        -O|--option)
+            return 0
+            ;;
+    esac
+
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+        return 0
+    fi
+
+    COMPREPLY=( $(compgen -f -- "$cur") )
+    return 0
+}
+complete -F _pycc pycc
+'''
+
+
+def _zsh_completion():
+    return r'''#compdef pycc
+
+_pycc() {
+    local -a opts
+    opts=(
+        '-O[Pass extra args to clang]:clang args:'
+        '--option[Pass extra args to clang]:clang args:'
+        '-B[Best optimization]'
+        '--best[Best optimization]'
+        '--python[Python version]:version:(3.11 3.12 3.13 3.14 3.15)'
+        '-o[Output file or directory]:output:_files'
+        '--output[Output file or directory]:output:_files'
+        '-run[Compile and run]'
+        '-c[Generate C file]'
+        '-cpp[Generate C++ file]'
+        '-so[Generate shared library]'
+        '--dir[Compile every file in a directory separately]'
+        '--dir-one[Bundle a directory into one output]'
+        '-one[Bundle a directory into one output]'
+        '--entry[Entry module for --dir-one]:module:'
+        '--site[Install to site-packages]'
+        '-s[Install to site-packages]'
+        '-v[Verbose mode]'
+        '-q[Quiet mode]'
+        '-###[Show commands only]'
+        '--completions[Print shell completions]:shell:(bash zsh fish)'
+        '--completion[Print shell completions]:shell:(bash zsh fish)'
+        '--version[Version info]'
+        '(-h --help)'{-h,--help}'[Show help]'
+        '*:input:_files -g "*.py *.pyx *.c *.cpp *.cc *.cxx(-.) *(-/)"'
+    )
+    _arguments -s $opts
+}
+
+_pycc "$@"
+'''
+
+
+def _fish_completion():
+    return r'''# fish completion for pycc
+complete -c pycc -f
+complete -c pycc -s O -l option -d 'Pass extra args to clang' -r
+complete -c pycc -s B -l best -d 'Best optimization'
+complete -c pycc -l python -d 'Python version' -x -a '3.11 3.12 3.13 3.14 3.15'
+complete -c pycc -s o -l output -d 'Output file or directory' -r -F
+complete -c pycc -o run -d 'Compile and run'
+complete -c pycc -s c -d 'Generate C file'
+complete -c pycc -o cpp -d 'Generate C++ file'
+complete -c pycc -o so -d 'Generate shared library'
+complete -c pycc -l dir -d 'Compile every file in a directory separately'
+complete -c pycc -l dir-one -d 'Bundle a directory into one output'
+complete -c pycc -o one -d 'Bundle a directory into one output'
+complete -c pycc -l entry -d 'Entry module for --dir-one' -r
+complete -c pycc -l site -d 'Install to site-packages'
+complete -c pycc -s s -d 'Install to site-packages'
+complete -c pycc -s v -d 'Verbose mode'
+complete -c pycc -s q -d 'Quiet mode'
+complete -c pycc -o '###' -d 'Show commands only'
+complete -c pycc -l completions -d 'Print shell completions' -x -a 'bash zsh fish'
+complete -c pycc -l completion -d 'Print shell completions' -x -a 'bash zsh fish'
+complete -c pycc -l version -d 'Version info'
+complete -c pycc -s h -l help -d 'Show help'
+complete -c pycc -a '(__fish_complete_suffix .py .pyx .c .cpp .cc .cxx)' -d 'Source file'
+complete -c pycc -a '(__fish_complete_directories)' -d 'Directory'
+'''
+
+
+def print_completions(shell):
+    shell = (shell or '').strip().lower()
+    if shell == 'bash':
+        print(_bash_completion(), end='')
+    elif shell == 'zsh':
+        print(_zsh_completion(), end='')
+    elif shell == 'fish':
+        print(_fish_completion(), end='')
+    else:
+        print_error(f"Unknown shell '{shell}'. Supported: bash, zsh, fish")
+        sys.exit(1)
+
+
 def parse_clang_extra(args):
     clang_extra = []
     new_args = []
@@ -892,6 +1015,15 @@ def main():
         print(f"pycc {VERSION}")
         print(DESCRIPTION)
         return
+
+    for flag in ('--completions', '--completion'):
+        if flag in sys.argv:
+            idx = sys.argv.index(flag)
+            if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith('-'):
+                print_completions(sys.argv[idx + 1])
+                return
+            print_error(f"{flag} requires a shell: bash, zsh, fish")
+            sys.exit(1)
     
     if '--help' in sys.argv or '-h' in sys.argv:
         print(f"pycc {VERSION} - {DESCRIPTION}")
@@ -922,6 +1054,7 @@ def main():
         print("  -v                  Verbose mode")
         print("  -q                  Quiet mode")
         print("  -###                Show commands only")
+        print("  --completions <sh>  Print shell completions (bash/zsh/fish)")
         print("  --version           Version info")
         print("  --help, -h          This help")
         print("\nEnvironment:")

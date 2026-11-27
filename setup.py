@@ -12,7 +12,7 @@ def check_termux():
 
 check_termux()
 
-VERSION = "1.6.0"
+VERSION = "1.6.1"
 DESCRIPTION = "Compile python to ELF (Only Termux)"
 
 setup(

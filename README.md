@@ -72,6 +72,19 @@ files are compiled in `--dir` mode, but ignored by `--dir-one`.
 In `--dir` mode each file is compiled on its own, so sibling `import`s are not
 bundled; use `--dir-one` when the files depend on each other.
 
+## Shell completions
+
+```bash
+# bash
+pycc --completions bash > $PREFIX/share/bash-completion/completions/pycc
+
+# zsh
+pycc --completions zsh > $PREFIX/share/zsh/site-functions/_pycc
+
+# fish
+pycc --completions fish > $PREFIX/share/fish/vendor_completions.d/pycc.fish
+```
+
 ## Options
 
 | Option | Description |
@@ -90,6 +103,7 @@ bundled; use `--dir-one` when the files depend on each other.
 | `-v` | Verbose mode (show commands) |
 | `-q` | Quiet mode |
 | `-###` | Show commands only |
+| `--completions <sh>` | Print shell completions (`bash`/`zsh`/`fish`) |
 
 ## Environment
 
